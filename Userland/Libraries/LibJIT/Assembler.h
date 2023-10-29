@@ -241,7 +241,7 @@ struct Assembler {
     virtual void sub(Operand dst, Operand src) = 0;
 
     virtual void native_call(
-        void* callee,
+        u64 callee,
         Vector<Operand> const& preserved_registers = {},
         Vector<Operand> const& stack_arguments = {})
         = 0;

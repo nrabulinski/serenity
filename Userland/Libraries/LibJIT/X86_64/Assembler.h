@@ -380,7 +380,7 @@ struct X86_64Assembler final : public Assembler {
     }
 
     void native_call(
-        void* callee,
+        u64 callee,
         Vector<Operand> const& preserved_registers = {},
         Vector<Operand> const& stack_arguments = {})
         override
@@ -396,7 +396,7 @@ struct X86_64Assembler final : public Assembler {
             push(stack_argument);
 
         // load callee into RAX
-        mov(Operand::Register(X86_64Reg::rax()), Operand::Imm(bit_cast<u64>(callee)));
+        mov(Operand::Register(X86_64Reg::rax()), Operand::Imm(callee));
 
         // call RAX
         emit8(0xff);
