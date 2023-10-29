@@ -161,6 +161,7 @@ private:
     explicit Compiler(Bytecode::Executable& bytecode_executable)
         : m_bytecode_executable(bytecode_executable)
     {
+        m_assembler = make<Assembler>(m_output);
     }
 
     Assembler::Label& label_for(Bytecode::BasicBlock const& block)
@@ -184,7 +185,7 @@ private:
     HashMap<Bytecode::BasicBlock const*, NonnullOwnPtr<BasicBlockData>> m_basic_block_data;
 
     Vector<u8> m_output;
-    Assembler m_assembler { m_output };
+    OwnPtr<Assembler> m_assembler;
     Assembler::Label m_exit_label;
     Assembler::Label m_exception_handler;
     Bytecode::Executable& m_bytecode_executable;
