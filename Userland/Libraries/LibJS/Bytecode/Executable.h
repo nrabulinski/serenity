@@ -16,6 +16,8 @@
 #include <LibJS/JIT/NativeExecutable.h>
 #include <LibJS/Runtime/EnvironmentCoordinate.h>
 
+namespace JS::JIT { class Compiler; }
+
 namespace JS::Bytecode {
 
 struct PropertyLookupCache {
@@ -66,7 +68,7 @@ public:
 
     void dump() const;
 
-    JIT::NativeExecutable const* get_or_create_native_executable();
+    JIT::NativeExecutable const* get_or_create_native_executable(JIT::Compiler& compiler);
 
 private:
     OwnPtr<JIT::NativeExecutable> m_native_executable;

@@ -45,9 +45,8 @@
 
 namespace JS::JIT {
 
-Compiler::Compiler(Bytecode::Executable& bytecode_executable)
+Compiler::Compiler()
     : m_assembler(::JIT::assembler_for_current_arch(m_output))
-    , m_bytecode_executable(bytecode_executable)
 {
     if (m_assembler.ptr() == nullptr)
         return;
@@ -706,7 +705,7 @@ static Value cxx_new_string(VM& vm, DeprecatedString const& string)
 
 void Compiler::compile_new_string(Bytecode::Op::NewString const& op)
 {
-    auto const& string = m_bytecode_executable.string_table->get(op.index());
+    auto const& string = m_bytecode_executable->string_table->get(op.index());
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
         Assembler::Operand::Imm(reinterpret_cast<u64>(&string)));
@@ -716,9 +715,9 @@ void Compiler::compile_new_string(Bytecode::Op::NewString const& op)
 
 void Compiler::compile_new_regexp(Bytecode::Op::NewRegExp const& op)
 {
-    auto const& parsed_regex = m_bytecode_executable.regex_table->get(op.regex_index());
-    auto const& pattern = m_bytecode_executable.string_table->get(op.source_index());
-    auto const& flags = m_bytecode_executable.string_table->get(op.flags_index());
+    auto const& parsed_regex = m_bytecode_executable->regex_table->get(op.regex_index());
+    auto const& pattern = m_bytecode_executable->string_table->get(op.source_index());
+    auto const& flags = m_bytecode_executable->string_table->get(op.flags_index());
 
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
@@ -875,7 +874,7 @@ void Compiler::compile_get_variable(Bytecode::Op::GetVariable const& op)
 {
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.identifier()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.identifier()))));
     m_assembler->mov(
         Assembler::Operand::Register(ARG2),
         Assembler::Operand::Imm(op.cache_index()));
@@ -901,7 +900,7 @@ void Compiler::compile_get_callee_and_this_from_environment(Bytecode::Op::GetCal
 {
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.identifier()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.identifier()))));
     m_assembler->mov(
         Assembler::Operand::Register(ARG2),
         Assembler::Operand::Imm(op.cache_index()));
@@ -1069,7 +1068,7 @@ void Compiler::compile_typeof_variable(Bytecode::Op::TypeofVariable const& op)
 {
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.identifier().value()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.identifier().value()))));
     native_call(reinterpret_cast<u64>(cxx_typeof_variable));
     store_vm_register(Bytecode::Register::accumulator(), RET);
     check_exception();
@@ -1091,7 +1090,7 @@ void Compiler::compile_create_variable(Bytecode::Op::CreateVariable const& op)
 {
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.identifier().value()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.identifier().value()))));
     m_assembler->mov(
         Assembler::Operand::Register(ARG2),
         Assembler::Operand::Imm(to_underlying(op.mode())));
@@ -1123,7 +1122,7 @@ void Compiler::compile_set_variable(Bytecode::Op::SetVariable const& op)
 {
     m_assembler->mov(
         Assembler::Operand::Register(ARG1),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.identifier().value()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.identifier().value()))));
     load_vm_register(ARG2, Bytecode::Register::accumulator());
     m_assembler->mov(
         Assembler::Operand::Register(ARG3),
@@ -1437,7 +1436,7 @@ void Compiler::compile_get_private_by_id(Bytecode::Op::GetPrivateById const& op)
     load_vm_register(ARG1, Bytecode::Register::accumulator());
     m_assembler->mov(
         Assembler::Operand::Register(ARG2),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.property()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.property()))));
     native_call(reinterpret_cast<u64>(cxx_get_private_by_id));
     store_vm_register(Bytecode::Register::accumulator(), RET);
     check_exception();
@@ -1510,7 +1509,7 @@ void Compiler::compile_delete_by_id_with_this(Bytecode::Op::DeleteByIdWithThis c
     load_vm_register(ARG1, Bytecode::Register::accumulator());
     m_assembler->mov(
         Assembler::Operand::Register(ARG2),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.property()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.property()))));
     load_vm_register(ARG3, op.this_value());
     native_call(reinterpret_cast<u64>(cxx_delete_by_id_with_this));
     store_vm_register(Bytecode::Register::accumulator(), RET);
@@ -1528,7 +1527,7 @@ void Compiler::compile_put_by_id_with_this(Bytecode::Op::PutByIdWithThis const& 
     load_vm_register(ARG2, Bytecode::Register::accumulator());
     m_assembler->mov(
         Assembler::Operand::Register(ARG3),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.property()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.property()))));
     load_vm_register(ARG4, op.this_value());
     m_assembler->mov(
         Assembler::Operand::Register(ARG5),
@@ -1551,7 +1550,7 @@ void Compiler::compile_put_private_by_id(Bytecode::Op::PutPrivateById const& op)
     load_vm_register(ARG2, Bytecode::Register::accumulator());
     m_assembler->mov(
         Assembler::Operand::Register(ARG3),
-        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable.get_identifier(op.property()))));
+        Assembler::Operand::Imm(reinterpret_cast<u64>(&m_bytecode_executable->get_identifier(op.property()))));
     native_call(reinterpret_cast<u64>(cxx_put_private_by_id));
     store_vm_register(Bytecode::Register::accumulator(), RET);
     check_exception();
@@ -1571,35 +1570,35 @@ void Compiler::native_call(u64 function_address, Vector<Assembler::Operand> cons
 
 OwnPtr<NativeExecutable> Compiler::compile(Bytecode::Executable& bytecode_executable)
 {
-    if (!getenv("LIBJS_JIT"))
+    if (!getenv("LIBJS_JIT") || m_assembler.ptr() == nullptr)
         return nullptr;
 
-    Compiler compiler { bytecode_executable };
+    m_output.clear();
+    new (&m_exit_label) Assembler::Label {};
+    new (&m_exception_handler) Assembler::Label {};
+    m_bytecode_executable = bytecode_executable;
 
-    if (compiler.m_assembler.ptr() == nullptr)
-        return nullptr;
+    m_assembler->enter();
 
-    compiler.m_assembler->enter();
+    m_assembler->mov(
+        Assembler::Operand::Register(REGISTER_ARRAY_BASE),
+        Assembler::Operand::Register(ARG1));
 
-    compiler.m_assembler->mov(
-        Assembler::Operand::Register(compiler.REGISTER_ARRAY_BASE),
-        Assembler::Operand::Register(compiler.ARG1));
+    m_assembler->mov(
+        Assembler::Operand::Register(LOCALS_ARRAY_BASE),
+        Assembler::Operand::Register(ARG2));
 
-    compiler.m_assembler->mov(
-        Assembler::Operand::Register(compiler.LOCALS_ARRAY_BASE),
-        Assembler::Operand::Register(compiler.ARG2));
-
-    compiler.push_unwind_context(false, {}, {});
+    push_unwind_context(false, {}, {});
 
     for (auto& block : bytecode_executable.basic_blocks) {
-        compiler.block_data_for(*block).start_offset = compiler.m_output.size();
+        block_data_for(*block).start_offset = m_output.size();
         auto it = Bytecode::InstructionStreamIterator(block->instruction_stream());
         while (!it.at_end()) {
             auto const& op = *it;
             switch (op.type()) {
-#define CASE_BYTECODE_OP(OpTitleCase, op_snake_case)                                         \
-    case Bytecode::Instruction::Type::OpTitleCase:                                           \
-        compiler.compile_##op_snake_case(static_cast<Bytecode::Op::OpTitleCase const&>(op)); \
+#define CASE_BYTECODE_OP(OpTitleCase, op_snake_case)                                \
+    case Bytecode::Instruction::Type::OpTitleCase:                                  \
+        compile_##op_snake_case(static_cast<Bytecode::Op::OpTitleCase const&>(op)); \
         break;
                 JS_ENUMERATE_IMPLEMENTED_JIT_OPS(CASE_BYTECODE_OP)
 #undef CASE_BYTECODE_OP
@@ -1614,49 +1613,49 @@ OwnPtr<NativeExecutable> Compiler::compile(Bytecode::Executable& bytecode_execut
             ++it;
         }
         if (!block->is_terminated())
-            compiler.jump_to_exit();
+            jump_to_exit();
     }
 
-    compiler.m_exit_label.link(*compiler.m_assembler);
-    compiler.m_assembler->exit();
+    m_exit_label.link(*m_assembler);
+    m_assembler->exit();
 
-    if (!compiler.m_exception_handler.jump_slot_offsets_in_instruction_stream.is_empty()) {
-        compiler.m_exception_handler.link(*compiler.m_assembler);
-        compiler.handle_exception();
+    if (!m_exception_handler.jump_slot_offsets_in_instruction_stream.is_empty()) {
+        m_exception_handler.link(*m_assembler);
+        handle_exception();
     }
 
-    auto* executable_memory = mmap(nullptr, compiler.m_output.size(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+    auto* executable_memory = mmap(nullptr, m_output.size(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
     if (executable_memory == MAP_FAILED) {
         dbgln("mmap: {}", strerror(errno));
         return nullptr;
     }
 
     for (auto& block : bytecode_executable.basic_blocks) {
-        auto& block_data = compiler.block_data_for(*block);
+        auto& block_data = block_data_for(*block);
 
-        block_data.label.link_to(*compiler.m_assembler, block_data.start_offset);
+        block_data.label.link_to(*m_assembler, block_data.start_offset);
 
         // Patch up all the absolute references
         for (auto& absolute_reference : block_data.absolute_references_to_here) {
             auto offset = reinterpret_cast<u64>(executable_memory) + block_data.start_offset;
-            compiler.m_output[absolute_reference + 0] = (offset >> 0) & 0xff;
-            compiler.m_output[absolute_reference + 1] = (offset >> 8) & 0xff;
-            compiler.m_output[absolute_reference + 2] = (offset >> 16) & 0xff;
-            compiler.m_output[absolute_reference + 3] = (offset >> 24) & 0xff;
-            compiler.m_output[absolute_reference + 4] = (offset >> 32) & 0xff;
-            compiler.m_output[absolute_reference + 5] = (offset >> 40) & 0xff;
-            compiler.m_output[absolute_reference + 6] = (offset >> 48) & 0xff;
-            compiler.m_output[absolute_reference + 7] = (offset >> 56) & 0xff;
+            m_output[absolute_reference + 0] = (offset >> 0) & 0xff;
+            m_output[absolute_reference + 1] = (offset >> 8) & 0xff;
+            m_output[absolute_reference + 2] = (offset >> 16) & 0xff;
+            m_output[absolute_reference + 3] = (offset >> 24) & 0xff;
+            m_output[absolute_reference + 4] = (offset >> 32) & 0xff;
+            m_output[absolute_reference + 5] = (offset >> 40) & 0xff;
+            m_output[absolute_reference + 6] = (offset >> 48) & 0xff;
+            m_output[absolute_reference + 7] = (offset >> 56) & 0xff;
         }
     }
 
     if constexpr (DUMP_JIT_MACHINE_CODE_TO_STDOUT) {
-        (void)write(STDOUT_FILENO, compiler.m_output.data(), compiler.m_output.size());
+        (void)write(STDOUT_FILENO, m_output.data(), m_output.size());
     }
 
-    memcpy(executable_memory, compiler.m_output.data(), compiler.m_output.size());
+    memcpy(executable_memory, m_output.data(), m_output.size());
 
-    if (mprotect(executable_memory, compiler.m_output.size(), PROT_READ | PROT_EXEC) < 0) {
+    if (mprotect(executable_memory, m_output.size(), PROT_READ | PROT_EXEC) < 0) {
         dbgln("mprotect: {}", strerror(errno));
         return nullptr;
     }
@@ -1665,7 +1664,7 @@ OwnPtr<NativeExecutable> Compiler::compile(Bytecode::Executable& bytecode_execut
         dbgln("\033[32;1mJIT compilation succeeded!\033[0m {}", bytecode_executable.name);
     }
 
-    auto executable = make<NativeExecutable>(executable_memory, compiler.m_output.size());
+    auto executable = make<NativeExecutable>(executable_memory, m_output.size());
     if constexpr (DUMP_JIT_DISASSEMBLY)
         executable->dump_disassembly();
     return executable;

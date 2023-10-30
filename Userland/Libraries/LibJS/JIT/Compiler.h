@@ -19,7 +19,8 @@ using ::JIT::Assembler;
 
 class Compiler {
 public:
-    static OwnPtr<NativeExecutable> compile(Bytecode::Executable&);
+    explicit Compiler();
+    OwnPtr<NativeExecutable> compile(Bytecode::Executable&);
 
 private:
     Assembler::Reg GPR0 = Assembler::Reg::empty();
@@ -154,8 +155,6 @@ private:
     template<typename Codegen>
     void branch_if_both_int32(Assembler::Reg, Assembler::Reg, Codegen);
 
-    explicit Compiler(Bytecode::Executable& bytecode_executable);
-
     Assembler::Label& label_for(Bytecode::BasicBlock const& block)
     {
         return block_data_for(block).label;
@@ -178,9 +177,9 @@ private:
 
     Vector<u8> m_output;
     OwnPtr<Assembler> m_assembler;
-    Assembler::Label m_exit_label;
-    Assembler::Label m_exception_handler;
-    Bytecode::Executable& m_bytecode_executable;
+    Assembler::Label m_exit_label {};
+    Assembler::Label m_exception_handler {};
+    Optional<Bytecode::Executable&> m_bytecode_executable {};
 };
 
 }

@@ -13,6 +13,7 @@
 #include <LibJS/Runtime/FunctionKind.h>
 #include <LibJS/Runtime/VM.h>
 #include <LibJS/Runtime/Value.h>
+#include <LibJS/JIT/Compiler.h>
 
 namespace JS::Bytecode {
 
@@ -106,6 +107,7 @@ private:
     Executable* m_current_executable { nullptr };
     BasicBlock const* m_current_block { nullptr };
     Optional<InstructionStreamIterator&> m_pc {};
+    JIT::Compiler m_compiler {};
 };
 
 extern bool g_dump_bytecode;

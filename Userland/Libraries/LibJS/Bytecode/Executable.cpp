@@ -53,11 +53,11 @@ void Executable::dump() const
     }
 }
 
-JIT::NativeExecutable const* Executable::get_or_create_native_executable()
+JIT::NativeExecutable const* Executable::get_or_create_native_executable(JIT::Compiler& compiler)
 {
     if (!m_did_try_jitting) {
         m_did_try_jitting = true;
-        m_native_executable = JIT::Compiler::compile(*this);
+        m_native_executable = compiler.compile(*this);
     }
     return m_native_executable;
 }

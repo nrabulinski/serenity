@@ -351,7 +351,7 @@ Interpreter::ValueAndFrame Interpreter::run_and_return_frame(Executable& executa
     else
         push_call_frame(make<CallFrame>(), executable.number_of_registers);
 
-    if (auto native_executable = executable.get_or_create_native_executable()) {
+    if (auto native_executable = executable.get_or_create_native_executable(m_compiler)) {
         native_executable->run(vm());
 
 #if 0
